@@ -1,3 +1,4 @@
+-i https://pypi.tuna.tsinghua.edu.cn/simple
 numpy
 pydantic==2.1.1
 Requests==2.31.0

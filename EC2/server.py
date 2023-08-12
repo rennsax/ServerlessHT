@@ -2,8 +2,10 @@ import logging
 import pickle
 import threading
 
-from conf import settings
+import numpy as np
 from flask import Flask, request
+
+from conf import settings
 from global_v import shared
 
 app = Flask(__name__)
@@ -29,7 +31,7 @@ def after_all_response():
 
 @app.post("/ps")
 def sync_grads():
-    grads_hex = request.json["grads"]
+    grads_hex: str = request.json["grads"]  # type: ignore
     app.logger.debug("Receive request, grads: {:d} bytes".format(len(grads_hex)))
     grads: list[np.ndarray] = pickle.loads(bytes.fromhex(grads_hex))  # type: ignore
     with shared.cv:
@@ -57,8 +59,6 @@ def sync_grads():
     thr.start()
     return {
         "new-grads": new_grads_hex,
-        # TODO restart prediction algorithm
-        "restart": False,
     }
 
 

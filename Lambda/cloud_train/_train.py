@@ -1,14 +1,17 @@
 import logging
 import os
+from typing import Callable
 
 import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
 import torchvision  # type: ignore
-from hyperparameter import Hyperparameter
 from torch.utils.data import DataLoader, Subset
-from utils import get_logger
+
+from exceptions import LambdaExit
+from hyperparameter import Hyperparameter
+from utils import get_logger, predict_if_restart
 
 from .sync_weight import update_model
 
@@ -53,9 +56,12 @@ def get_train_data_loader(batch_size: int, slice_range: tuple[int, int]):
 def train_model(
     model: nn.Module,
     hyperparameter: Hyperparameter,
+    *,
+    begin_epoch: int,
     total_epoch: int,
     slice_range: tuple[int, int],
     proxy_url: str,
+    get_remaining_time: Callable[[], int],
 ):
     loss_function = nn.CrossEntropyLoss()
 
@@ -70,7 +76,7 @@ def train_model(
     model.train()
     logging_gap: int = int(os.environ.get("TRAIN_LOGGING_GAP", 10))
 
-    for epoch in range(1, total_epoch + 1):
+    for epoch in range(begin_epoch, total_epoch):
         for i, (train_x, train_label) in enumerate(train_loader):
             optimizer.zero_grad()
             output = model(train_x)
@@ -78,7 +84,13 @@ def train_model(
             loss.backward()
             optimizer.step()
             if i % logging_gap == 0:
-                _train_logger.info(f"Epoch {epoch}, step {i}, loss: {loss.item():.3f}")
+                _train_logger.info(
+                    f"Epoch {epoch + 1}, step {i}, loss: {loss.item():.3f}"
+                )
 
         # Each epoch, sync the weight with parameter server
+        _logger.info("Epoch %d, sync weight with parameter server", epoch)
         update_model(model, url=proxy_url)
+
+        if predict_if_restart(epoch, get_remaining_time()):
+            raise LambdaExit(restore=True, cur_epoch=epoch)
