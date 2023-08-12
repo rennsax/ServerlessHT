@@ -1,0 +1,5 @@
+WORKER_NUMBER = 1
+FUNCTION_NAME = "new-hyperparameter-tuning"
+DATA_SIZE = 60000
+EPOCH = 1
+PORT = 8080
