@@ -30,7 +30,10 @@ def update_model(model: nn.Module, *, url: str = "http://127.0.0.1:8080/ps") -> 
     if res.status_code != 200:
         raise LambdaExit("While synchronizing the weight, response error occurred.")
 
-    new_grads_hex = res.json()["new-grads"]
+    response_json = res.json()
+    new_grads_hex = response_json.get("new-grads")
+    if new_grads_hex is None:
+        raise LambdaExit("Lambda is closed intentionally (because of unexpected loss).")
 
     logger.debug(
         "Receive response with grads size: {:d} bytes".format(len(new_grads_hex))

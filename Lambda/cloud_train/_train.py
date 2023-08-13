@@ -34,7 +34,7 @@ _train_logger_handler.setFormatter(
 _train_logger.addHandler(_train_logger_handler)
 
 
-def get_train_data_loader(batch_size: int, slice_range: tuple[int, int]):
+def get_data_loader(batch_size: int, slice_range: tuple[int, int]):
     train_set = torchvision.datasets.MNIST(
         root="./data",
         train=True,
@@ -49,8 +49,20 @@ def get_train_data_loader(batch_size: int, slice_range: tuple[int, int]):
         num_workers=0,
     )
     _logger.info("Worker get data slice %s", slice_range)
+    test_set = torchvision.datasets.MNIST(
+        root="./data",
+        train=False,
+        download=False,
+        transform=torchvision.transforms.ToTensor(),
+    )
+    test_loader = DataLoader(
+        test_set,
+        batch_size=batch_size,
+        shuffle=False,
+        num_workers=0,
+    )
 
-    return train_loader
+    return train_loader, test_loader
 
 
 def train_model(
@@ -71,7 +83,7 @@ def train_model(
         momentum=hyperparameter.momentum,
     )
 
-    train_loader = get_train_data_loader(hyperparameter.batch_size, slice_range)
+    train_loader, test_loader = get_data_loader(hyperparameter.batch_size, slice_range)
 
     model.train()
     logging_gap: int = int(os.environ.get("TRAIN_LOGGING_GAP", 10))
@@ -92,5 +104,19 @@ def train_model(
         _logger.info("Epoch %d, sync weight with parameter server", epoch)
         update_model(model, url=proxy_url)
 
-        if predict_if_restart(epoch, get_remaining_time()):
+        if epoch != total_epoch - 1 and predict_if_restart(epoch, get_remaining_time()):
             raise LambdaExit(restore=True, cur_epoch=epoch)
+
+    model.eval()
+    # test the model
+    correct = 0
+    total = 0
+    for test_x, test_label in test_loader:
+        output = model(test_x)
+        _, predicted = torch.max(output.data, 1)
+        total += test_label.size(0)
+        correct += (predicted == test_label).sum().item()
+
+    test_accuracy = correct / total
+    _train_logger.info("Test accuracy: %.2f %%", 100 * test_accuracy)
+    return test_accuracy

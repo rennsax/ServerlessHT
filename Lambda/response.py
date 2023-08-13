@@ -16,6 +16,7 @@ class LambdaResponse(BaseModel):
     epoch: int = 0
     # model weight hex
     weight_hex: str | None = None
+    test_accuracy: str | None = None
 
     # def __str__(self) -> str:
     #     return (
@@ -28,6 +29,6 @@ class LambdaResponse(BaseModel):
 
 def response_for_logging(response_dict: dict[str, Any]) -> dict[str, Any]:
     res = response_dict.copy()
-    if weight_hex := res.get("model_weight_hex"):
-        res.update({"model_weight_hex": f"length: {len(weight_hex)}"})
+    if weight_hex := res.get("weight_hex"):
+        res.update({"weight_hex": f"length: {len(weight_hex)}"})
     return res

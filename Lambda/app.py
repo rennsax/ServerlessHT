@@ -63,7 +63,7 @@ def handler(event, context: AWSLambdaContext) -> dict[str, Any]:
             os.environ["LAMBDA_TRAIN_LIMIT_TIME"] = str(total_time)
 
         # parse event
-        app_logger.debug("Receives event: %s", event)
+        app_logger.debug("Receives event: %s", response_for_logging(event))
         try:
             lr = float(event["learning-rate"])
             batch_size = int(event["batch-size"])
@@ -89,13 +89,13 @@ def handler(event, context: AWSLambdaContext) -> dict[str, Any]:
         )
         model = LambdaModel()
 
-        if weight_hex := event.get("model_weight_hex") is not None:
+        if (weight_hex := event.get("weight_hex")) is not None:
             app_logger.debug("Loading model weight...")
             weight = pickle.loads(bytes.fromhex(weight_hex))  # type: ignore
             set_model_weight(model, weight)
 
         try:
-            train_model(
+            test_accuracy = train_model(
                 model,
                 hyperparameter,
                 total_epoch=epoch,
@@ -104,6 +104,7 @@ def handler(event, context: AWSLambdaContext) -> dict[str, Any]:
                 proxy_url=proxy_url,
                 get_remaining_time=context.get_remaining_time_in_millis,
             )
+            response.test_accuracy = test_accuracy
         except exceptions.LambdaExit as ex:
             if ex.restore:
                 # Lambda need to be restarted
