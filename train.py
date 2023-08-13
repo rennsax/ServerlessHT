@@ -1,8 +1,8 @@
 import asyncio
 import hashlib
+import json
 import logging
 import pathlib
-import json
 from typing import Any
 
 from models import Hyperparameter
@@ -41,38 +41,17 @@ async def train(params: Hyperparameter, index: int) -> tuple[float, ...]:
     output_file = pathlib.Path("output/" + str(index) + ".txt")
     log_output = pathlib.Path("subprocess/" + str(index) + ".txt")
     command: list[str] = [
-        "python3",
-        "EC2.py",
-        "--total-groups",
-        "1",
-        "--num-parts",
-        str(WORKER_NUM),
-        "--port",
-        f"{9000+index}",
-        "--bucket-name",
-        "fychttptest1",
-        "--batch-size",
-        f"{params.batch_size:d}",
-        "--lr",
-        f"{params.learning_rate:f}",
-        "--momentum",
-        f"{params.momentum:f}",
-        "--epoch",
-        f"{EPOCH}",
-        "--reinvoke-time",
-        str(REINVOKE_TIME),
-        "--data-s3path",
-        TRAIN_DATA_PATH,
-        "--test-data-path",
-        TEST_DATA_PATH,
-        "--output-file",
-        output_file.as_posix(),
-        "--limit-loss",
-        "0.8",
-        "--limit-epoch",
-        "10",
-        "--lambda-name",
-        LAMBDA_NAME,
+        "zsh",
+        "launch_faastuning.zsh",
+        "4",  # worker number
+        "new-hyperparameter-tuning",  # function name
+        "60000",  # data size
+        "2",  # epoch
+        f"{10000+index}",  # port
+        str(index),
+        str(params.batch_size),
+        str(params.momentum),
+        str(params.learning_rate),
     ]
     log_file = open(log_output, "w")
     proc = await asyncio.create_subprocess_exec(
@@ -89,15 +68,15 @@ async def train(params: Hyperparameter, index: int) -> tuple[float, ...]:
             lines = f.readlines()
         if len(lines) == 0:
             raise RuntimeError("no output")
-        res = lines[0].strip().split(",")
-        if len(res) != 3:
+        res = lines[0].strip().split(" ")
+        if len(res) != 2:
             raise RuntimeError("invalid output")
         logger.info("Train (%s) over with result %s", params, res)
     except Exception:
         logger.exception("Train (%s) failed", params)
         return (0.0, 0.0, 0.0)
     else:
-        return (*map(float, res),)
+        return (*map(float, res), 0)
 
 
 async def main():

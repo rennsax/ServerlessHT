@@ -8,6 +8,9 @@ class Settings:
     EPOCH: int
     PORT: int
     OUTPUT_FILE: str
+    BATCH_SIZE: int
+    MOMENTUM: float
+    LEARNING_RATE: float
 
     def __init__(self, settings):
         for attr in dir(settings):

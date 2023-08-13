@@ -2,12 +2,11 @@ import json
 import os
 import signal
 import threading
-from typing import Any
 from threading import Lock
+from typing import Any
 
 import boto3
 import requests
-
 import utils
 from conf import settings
 from response import LambdaResponse, response_for_logging
@@ -48,6 +47,7 @@ def validate_invoke() -> bool:
 
     return True
 
+
 def add_time(_time: float):
     with lambda_total_time_mtx:
         lambda_total_time.append(_time)
@@ -58,13 +58,17 @@ def invoke_lambda(index: int, payload: dict[str, Any]):
 
     test_res = "0"
     while True:
-        logger.debug("Invoke %d-th worker with %s", index, response_for_logging(payload))
+        logger.debug(
+            "Invoke %d-th worker with %s", index, response_for_logging(payload)
+        )
         boto3_response = lambda_client.invoke(
             FunctionName=settings.FUNCTION_NAME,
             Payload=json.dumps(payload).encode("utf-8"),
         )
         response = json.loads(boto3_response["Payload"].read())
-        logger.debug("The %d-th worker response with %s", index, response_for_logging(response))
+        logger.debug(
+            "The %d-th worker response with %s", index, response_for_logging(response)
+        )
         add_time(TOTAL_TIME_LIMIT - float(response["leftTime"]))
 
         if response["error"]:
@@ -84,7 +88,6 @@ def invoke_lambda(index: int, payload: dict[str, Any]):
             payload["weight_hex"] = weight_hex
         logger.info("The %d-th worker restarts from epoch %d", index, response["epoch"])
     test_results.append(test_res)
-
 
 
 def create_worker(worker_number: int) -> list[threading.Thread]:
@@ -108,9 +111,9 @@ def create_worker(worker_number: int) -> list[threading.Thread]:
             "slice-begin": slice_begin,
             "slice-end": slice_end,
             "epoch": settings.EPOCH,
-            "learning-rate": 0.01,
-            "batch-size": 128,
-            "momentum": 0.9,
+            "learning-rate": settings.LEARNING_RATE,
+            "batch-size": settings.BATCH_SIZE,
+            "momentum": settings.MOMENTUM,
             # 0-indexed
             "begin-epoch": 0,
         }
