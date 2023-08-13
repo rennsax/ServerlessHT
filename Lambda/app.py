@@ -41,9 +41,10 @@ def handler(event, context: AWSLambdaContext) -> dict[str, Any]:
         logging_level_id = getattr(logging, logging_level, logging.INFO)
         loggers = [
             app_logger,
-            logging.getLogger("cloud_train.sync_weight"),
-            logging.getLogger("cloud_train._train"),
-            logging.getLogger("cloud_train._train.train_info"),
+            logging.getLogger("cloud_train"),
+            # logging.getLogger("cloud_train.sync_weight"),
+            # logging.getLogger("cloud_train._train"),
+            # logging.getLogger("cloud_train._train.train_info"),
             logging.getLogger("utils"),
         ]
         for logger in loggers:
@@ -128,7 +129,7 @@ def handler(event, context: AWSLambdaContext) -> dict[str, Any]:
     app_logger.info("Remaining time: %.2f", remaining_time_in_seconds)
     response.leftTime = remaining_time_in_seconds
 
-    app_logger.debug("Lambda response: %s", response_for_logging(response))
+    app_logger.debug("Lambda response: %s", response_for_logging(response.model_dump()))
 
     return response.model_dump()
 
@@ -184,4 +185,4 @@ if __name__ == "__main__":
 
     res = handler(sample_event, fake_context)  # type: ignore
 
-    print("Lambda response: ", res)
+    print("Lambda response: ", response_for_logging(res))
