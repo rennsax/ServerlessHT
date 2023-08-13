@@ -3,16 +3,22 @@ import os
 import signal
 import threading
 from typing import Any
+from threading import Lock
 
 import boto3
 import requests
 
 import utils
 from conf import settings
-from response import LambdaResponse
+from response import LambdaResponse, response_for_logging
 
 logger = utils.get_logger(__name__)
 lambda_client = boto3.client("lambda")
+test_results = []
+lambda_total_time: list[float] = []
+lambda_total_time_mtx = Lock()
+
+TOTAL_TIME_LIMIT = 900
 
 
 def validate_invoke() -> bool:
@@ -28,7 +34,7 @@ def validate_invoke() -> bool:
             "learning-rate": "0.01",
             "batch-size": "128",
             "momentum": "0.9",
-            "beginEpoch": 0,
+            "begin-epoch": 0,
         }
 
         lambda_client.invoke(
@@ -42,32 +48,43 @@ def validate_invoke() -> bool:
 
     return True
 
+def add_time(_time: float):
+    with lambda_total_time_mtx:
+        lambda_total_time.append(_time)
+
 
 def invoke_lambda(index: int, payload: dict[str, Any]):
     # validate the Lambda function exists
 
+    test_res = "0"
     while True:
-        logger.debug("Invoke %d-th worker with %s", index, payload)
-        response: LambdaResponse = lambda_client.invoke(
+        logger.debug("Invoke %d-th worker with %s", index, response_for_logging(payload))
+        boto3_response = lambda_client.invoke(
             FunctionName=settings.FUNCTION_NAME,
             Payload=json.dumps(payload).encode("utf-8"),
         )
-        logger.debug("The %d-th worker response with %s", index, response)
-        if response.error:
+        response = json.loads(boto3_response["Payload"].read())
+        logger.debug("The %d-th worker response with %s", index, response_for_logging(response))
+        add_time(TOTAL_TIME_LIMIT - float(response["leftTime"]))
+
+        if response["error"]:
             logger.error(
                 "The %d-th worker fails: %s",
                 index,
-                response.errorMessage,
+                response["errorMessage"],
             )
-            os.kill(os.getpid(), signal.SIGUSR1)
+            # os.kill(os.getpid(), signal.SIGUSR1)
             break
-        if not response.restart:
+        if not response["restart"]:
             logger.info("The %d-th worker finishes", index)
+            test_res = response.get("test_accuracy", "0")
             break
-        payload["begin-epoch"] = response.epoch
-        if response.weight_hex is not None:
-            payload["model_weight_hex"] = response.weight_hex
-        logger.info("The %d-th worker restarts from epoch %d", index, response.epoch)
+        payload["begin-epoch"] = response["epoch"]
+        if (weight_hex := response.get("weight_hex")) is not None:
+            payload["weight_hex"] = weight_hex
+        logger.info("The %d-th worker restarts from epoch %d", index, response["epoch"])
+    test_results.append(test_res)
+
 
 
 def create_worker(worker_number: int) -> list[threading.Thread]:

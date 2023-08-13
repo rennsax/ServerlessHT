@@ -26,8 +26,8 @@ class LambdaResponse(BaseModel):
     #     )
 
 
-def response_for_logging(response: LambdaResponse) -> dict[str, Any]:
-    res = response.model_dump()
-    if weight_hex := res.get("model_weight_hex"):
-        res.update({"model_weight_hex": f"length: {len(weight_hex)}"})
+def response_for_logging(response_dict: dict[str, Any]) -> dict[str, Any]:
+    res = response_dict.copy()
+    if weight_hex := res.get("weight_hex"):
+        res.update({"weight_hex": f"length: {len(weight_hex)}"})
     return res

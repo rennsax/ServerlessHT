@@ -7,6 +7,7 @@ class Settings:
     DATA_SIZE: int
     EPOCH: int
     PORT: int
+    OUTPUT_FILE: str
 
     def __init__(self, settings):
         for attr in dir(settings):

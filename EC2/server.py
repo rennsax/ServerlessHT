@@ -13,8 +13,8 @@ app = Flask(__name__)
 WORKER_NUMBER = settings.WORKER_NUMBER
 
 # suppress WSGI logging
-flask_wsgi_logger = logging.getLogger("werkzeug")
-flask_wsgi_logger.setLevel(logging.ERROR)
+# flask_wsgi_logger = logging.getLogger("werkzeug")
+# flask_wsgi_logger.setLevel(logging.ERROR)
 
 
 def after_all_response():
@@ -66,3 +66,7 @@ def sync_grads():
 def check_variable():
     app.logger.debug("Checked: {}".format(shared))
     return {"syncGrad": shared.__repr__()}
+
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", debug=True, port=settings.PORT)
