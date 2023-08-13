@@ -1,0 +1,8 @@
+{
+    "genetic.crossoverProb": 0.3,
+    "genetic.mateProb": 0.5,
+    "genetic.maxEvaluatedIndividual": 18,
+    "genetic.mutationProb": 0.1,
+    "genetic.population.selectNumber": 3,
+    "genetic.population.size": 6
+}

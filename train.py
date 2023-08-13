@@ -7,16 +7,6 @@ from typing import Any
 
 from models import Hyperparameter
 
-with open("config.json", "r") as f:
-    config: dict[str, Any] = json.load(f)
-
-EPOCH: int = config["train.epoch"]
-TRAIN_DATA_PATH: str = config["train.trainSet"]
-TEST_DATA_PATH: str = config["train.testSet"]
-WORKER_NUM: int = config["train.workerNum"]
-REINVOKE_TIME: int = config["train.restartTime"]
-LAMBDA_NAME: str = config["train.LambdaName"]
-
 logger = logging.getLogger(__name__)
 logger.propagate = True  # default to be True in fact
 stream_handler = logging.StreamHandler()
