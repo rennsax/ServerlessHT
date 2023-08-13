@@ -16,6 +16,7 @@ class LambdaResponse(BaseModel):
     epoch: int = 0
     # model weight hex
     weight_hex: str | None = None
+    test_accuracy: str | None = None
 
     # def __str__(self) -> str:
     #     return (
