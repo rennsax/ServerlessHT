@@ -28,7 +28,7 @@ def hash_hyperparameter(params: Hyperparameter) -> str:
 
 
 async def train(params: Hyperparameter, index: int) -> tuple[float, ...]:
-    output_file = pathlib.Path("output/" + str(index) + ".txt")
+    output_file = pathlib.Path("output/result_" + str(index) + ".txt")
     log_output = pathlib.Path("subprocess/" + str(index) + ".txt")
     command: list[str] = [
         "zsh",
@@ -36,7 +36,7 @@ async def train(params: Hyperparameter, index: int) -> tuple[float, ...]:
         "4",  # worker number
         "new-hyperparameter-tuning",  # function name
         "60000",  # data size
-        "2",  # epoch
+        "20",  # epoch
         f"{10000+index}",  # port
         str(index),
         str(params.batch_size),

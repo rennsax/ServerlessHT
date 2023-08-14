@@ -1,6 +1,7 @@
 import logging
 import pickle
 import threading
+import os
 
 import numpy as np
 from flask import Flask, request
@@ -66,6 +67,10 @@ def sync_grads():
 def check_variable():
     app.logger.debug("Checked: {}".format(shared))
     return {"syncGrad": shared.__repr__()}
+
+@app.get("/pid")
+def get_pid():
+    return str(os.getpid())
 
 
 if __name__ == "__main__":

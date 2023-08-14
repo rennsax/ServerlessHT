@@ -12,6 +12,7 @@ from deap import base, creator, tools  # type: ignore
 from models import Hyperparameter
 from train import logger as train_logger
 from train import train
+from constants import design_space
 
 with open("config.json", "r") as f:
     config: dict[str, Any] = json.load(f)
@@ -37,11 +38,6 @@ stream_handler.setFormatter(
 logger.addHandler(stream_handler)
 
 toolbox = base.Toolbox()
-design_space = {
-    "batch_size": np.array([16, 32, 64, 128]),
-    "learning_rate": np.linspace(0.001, 0.1, 16),
-    "momentum": np.linspace(0.6, 0.9, 4),
-}
 RANDOM_SEED = np.random.randint(0, 1000)
 np.random.seed(RANDOM_SEED)
 random.seed(RANDOM_SEED)

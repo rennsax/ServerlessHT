@@ -35,8 +35,8 @@ args="\
 "
 
 eval "python3 EC2/server.py $args < /dev/null >| EC2/log/server_${index}.log 2>&1 &|"
-server_pid=$!
 
 eval "python3 EC2/main.py $args 2>&1 | tee -i EC2/log/worker_${index}.log &"
 wait $!
-kill -9 $server_pid
+
+eval "curl -s -XGET \"http://localhost:$5/pid\" | xargs kill -9"
