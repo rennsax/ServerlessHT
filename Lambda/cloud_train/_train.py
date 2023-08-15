@@ -1,5 +1,6 @@
 import logging
 import os
+import sys
 from typing import Callable
 
 import numpy as np
@@ -35,13 +36,34 @@ _train_logger.addHandler(_train_logger_handler)
 
 
 def get_data_loader(batch_size: int, slice_range: tuple[int, int]):
-    train_set = torchvision.datasets.MNIST(
-        root="./data",
-        train=True,
-        download=False,
-        transform=torchvision.transforms.ToTensor(),
-    )
-    train_set_slice = Subset(train_set, np.arange(*slice_range))
+    model_name = os.getenv("MODEL_NAME", "lenet")
+    if model_name == "lenet":
+        train_set = torchvision.datasets.MNIST(
+            root="./data",
+            train=True,
+            download=False,
+            transform=torchvision.transforms.ToTensor(),
+        )
+        test_set = torchvision.datasets.MNIST(
+            root="./data",
+            train=False,
+            download=False,
+            transform=torchvision.transforms.ToTensor(),
+        )
+    elif model_name == "resnet18":
+        train_set = torchvision.datasets.CIFAR10(
+            root="./data",
+            train=True,
+            download=False,
+            transform=torchvision.transforms.ToTensor(),
+        )
+        test_set = torchvision.datasets.CIFAR10(
+            root="./data",
+            train=False,
+            download=False,
+            transform=torchvision.transforms.ToTensor(),
+        )
+    train_set_slice = Subset(train_set, np.arange(*slice_range))  # type: ignore
     train_loader = DataLoader(
         train_set_slice,
         batch_size=batch_size,
@@ -49,12 +71,6 @@ def get_data_loader(batch_size: int, slice_range: tuple[int, int]):
         num_workers=0,
     )
     _logger.info("Worker get data slice %s", slice_range)
-    test_set = torchvision.datasets.MNIST(
-        root="./data",
-        train=False,
-        download=False,
-        transform=torchvision.transforms.ToTensor(),
-    )
     test_loader = DataLoader(
         test_set,
         batch_size=batch_size,

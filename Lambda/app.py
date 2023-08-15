@@ -6,9 +6,9 @@ import time
 from typing import Any
 
 import exceptions
+import model as preset_model
 from cloud_train import train_model
 from hyperparameter import Hyperparameter
-from model import LambdaModel
 from response import LambdaResponse, response_for_logging
 from utils import get_logger, get_model_weight, set_model_weight
 
@@ -87,7 +87,14 @@ def handler(event, context: AWSLambdaContext) -> dict[str, Any]:
             learning_rate=lr,
             momentum=momentum,
         )
-        model = LambdaModel()
+
+        model_name = os.getenv("MODEL_NAME", "lenet")
+        if model_name == "lenet":
+            model = preset_model.LeNet()
+        elif model_name == "resnet18":
+            model = preset_model.ResNet18()
+        else:
+            raise exceptions.LambdaExit("Unknown model name: %s" % model_name)
 
         if (weight_hex := event.get("weight_hex")) is not None:
             app_logger.debug("Loading model weight...")
